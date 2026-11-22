@@ -24,6 +24,12 @@
     },
     "plugins": [
       "expo-sharing"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "330658a3-61a3-48ee-8c6b-524f2d50971f"
+      }
+    },
+    "owner": "devbeckham"
   }
 }
