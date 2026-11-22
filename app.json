@@ -7,6 +7,12 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "updates": {
+      "url": "https://u.expo.dev/330658a3-61a3-48ee-8c6b-524f2d50971f"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "ios": {
       "supportsTablet": true
     },
@@ -30,6 +36,7 @@
     },
     "plugins": [
       "expo-sharing",
+      "expo-updates",
       [
         "expo-av",
         {
