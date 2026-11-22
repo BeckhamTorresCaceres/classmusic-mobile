@@ -23,7 +23,16 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": false,
+            "extraProguardRules": "-dontwarn **\n-keep class ** { *; }"
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {
