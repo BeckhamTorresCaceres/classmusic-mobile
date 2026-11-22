@@ -3,6 +3,7 @@
     "name": "ClassMusic",
     "slug": "classmusic-mobile",
     "version": "1.0.0",
+    "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -11,6 +12,11 @@
     },
     "android": {
       "package": "com.devbeckham.classmusic",
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.WAKE_LOCK",
+        "android.permission.FOREGROUND_SERVICE"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#09090B",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -24,6 +30,12 @@
     },
     "plugins": [
       "expo-sharing",
+      [
+        "expo-av",
+        {
+          "microphonePermission": false
+        }
+      ],
       [
         "expo-build-properties",
         {

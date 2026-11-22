@@ -27,14 +27,21 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const soundRef = useRef<Audio.Sound | null>(null);
 
   useEffect(() => {
-    // Configurar modo de audio para permitir reproducción continua
-    Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      staysActiveInBackground: true,
-      playsInSilentModeIOS: true,
-      shouldDuckAndroid: true,
-      playThroughEarpieceAndroid: false,
-    }).catch(() => {});
+    // Configurar modo de audio de forma segura
+    const setupAudio = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          staysActiveInBackground: true,
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+      } catch {
+        // Ignorar si el sistema de audio no está listo al inicio
+      }
+    };
+    setupAudio();
 
     return () => {
       soundRef.current?.unloadAsync().catch(() => {});
