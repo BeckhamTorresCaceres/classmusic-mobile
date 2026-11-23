@@ -7,7 +7,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "updates": {
-      "url": "https://u.expo.dev/330658a3-61a3-48ee-8c6b-524f2d50971f"
+      "url": "https://u.expo.dev/02d430a9-fb8d-4732-a277-c14bae5f9c32"
     },
     "runtimeVersion": {
       "policy": "appVersion"
@@ -20,7 +20,10 @@
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.WAKE_LOCK",
-        "android.permission.FOREGROUND_SERVICE"
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#09090B",
@@ -47,16 +50,17 @@
         {
           "android": {
             "enableProguardInReleaseBuilds": false,
-            "extraProguardRules": "-dontwarn **\n-keep class ** { *; }"
+            "extraProguardRules": "-dontwarn **\n-keep class ** { *; }",
+            "enableMinifyInReleaseBuilds": false
           }
         }
       ]
     ],
+    "owner": "devbeckhams-team",
     "extra": {
       "eas": {
-        "projectId": "330658a3-61a3-48ee-8c6b-524f2d50971f"
+        "projectId": "02d430a9-fb8d-4732-a277-c14bae5f9c32"
       }
-    },
-    "owner": "devbeckham"
+    }
   }
 }
