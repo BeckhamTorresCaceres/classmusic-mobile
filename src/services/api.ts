@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Track, User } from '../types';
 
-export const DEFAULT_API_URL = 'https://classmusic-api.onrender.com/api/v1';
+export const DEFAULT_API_URL = 'https://classmusic.duckdns.org/api/v1';
 
 const TOKEN_KEY = '@classmusic_access_token';
 const REFRESH_TOKEN_KEY = '@classmusic_refresh_token';
@@ -14,7 +14,12 @@ export class ApiService {
   static async init(): Promise<void> {
     try {
       const savedUrl = await AsyncStorage.getItem(API_URL_KEY);
-      if (savedUrl) this.baseUrl = savedUrl;
+      if (savedUrl && !savedUrl.includes('onrender.com')) {
+        this.baseUrl = savedUrl;
+      } else {
+        this.baseUrl = DEFAULT_API_URL;
+        await AsyncStorage.setItem(API_URL_KEY, DEFAULT_API_URL);
+      }
     } catch {
       // Ignorar error de carga de URL
     }
