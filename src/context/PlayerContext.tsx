@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
+import * as FileSystem from 'expo-file-system/legacy';
 import { ApiService } from '../services/api';
 import type { DownloadedTrack, Track } from '../types';
 
@@ -58,9 +59,19 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         playerRef.current = null;
       }
 
-      // Si la pista tiene localUri (ya descargada), usar archivo local
+      // Si la pista tiene localUri (ya descargada), usar archivo local solo si es íntegro
       let sourceUri = (track as DownloadedTrack).localUri;
-      if (!sourceUri) {
+      if (sourceUri) {
+        try {
+          const info = await FileSystem.getInfoAsync(sourceUri);
+          if (!info.exists || (info as { size: number }).size < 50000) {
+            // El archivo local está corrupto (ej: texto de error anterior). Usar streaming.
+            sourceUri = await ApiService.getStreamUrl(track.id);
+          }
+        } catch {
+          sourceUri = await ApiService.getStreamUrl(track.id);
+        }
+      } else {
         sourceUri = await ApiService.getStreamUrl(track.id);
       }
 

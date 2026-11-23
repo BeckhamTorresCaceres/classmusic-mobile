@@ -19,7 +19,41 @@ export class DownloadService {
   static async getDownloadedTracks(): Promise<DownloadedTrack[]> {
     try {
       const json = await AsyncStorage.getItem(DOWNLOADS_KEY);
-      return json ? JSON.parse(json) : [];
+      if (!json) return [];
+      const tracks: DownloadedTrack[] = JSON.parse(json);
+
+      // Validar integridad física de los archivos para eliminar descargas corruptas
+      const validTracks: DownloadedTrack[] = [];
+      let hadCorrupt = false;
+
+      for (const t of tracks) {
+        if (!t.localUri) {
+          hadCorrupt = true;
+          continue;
+        }
+        try {
+          const info = await FileSystem.getInfoAsync(t.localUri);
+          if (info.exists && (info as { size: number }).size >= 50000) {
+            validTracks.push({
+              ...t,
+              fileSize: (info as { size: number }).size,
+            });
+          } else {
+            hadCorrupt = true;
+            if (info.exists) {
+              await FileSystem.deleteAsync(t.localUri, { idempotent: true });
+            }
+          }
+        } catch {
+          hadCorrupt = true;
+        }
+      }
+
+      if (hadCorrupt) {
+        await AsyncStorage.setItem(DOWNLOADS_KEY, JSON.stringify(validTracks));
+      }
+
+      return validTracks;
     } catch {
       return [];
     }
@@ -66,16 +100,29 @@ export class DownloadService {
     );
 
     const result = await downloadResumable.downloadAsync();
-    if (!result || !result.uri) {
-      throw new Error('No se pudo completar la descarga del archivo');
+    if (!result || !result.uri || result.status !== 200) {
+      if (result?.uri) {
+        await FileSystem.deleteAsync(result.uri, { idempotent: true });
+      }
+      throw new Error(
+        `Error del servidor al descargar (HTTP ${result?.status || 500}). Asegúrate de guardar las cookies en Render.`,
+      );
     }
 
     const fileInfo = await FileSystem.getInfoAsync(result.uri);
+    const size = fileInfo.exists ? (fileInfo as { size: number }).size : 0;
+    if (size < 50000) {
+      await FileSystem.deleteAsync(result.uri, { idempotent: true });
+      throw new Error(
+        'El archivo descargado no es un audio válido (respuesta de error del servidor).',
+      );
+    }
+
     const downloadedTrack: DownloadedTrack = {
       ...track,
       localUri: result.uri,
       downloadedAt: Date.now(),
-      fileSize: fileInfo.exists ? (fileInfo as { size: number }).size : undefined,
+      fileSize: size,
     };
 
     // Guardar en la lista de canciones descargadas
