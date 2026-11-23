@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
 import { ApiService } from '../services/api';
 import type { DownloadedTrack, Track } from '../types';
 
@@ -24,74 +24,62 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [positionMillis, setPositionMillis] = useState(0);
   const [durationMillis, setDurationMillis] = useState(0);
 
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const playerRef = useRef<AudioPlayer | null>(null);
 
   useEffect(() => {
-    // Configurar modo de audio de forma segura
-    const setupAudio = async () => {
-      try {
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: false,
-          staysActiveInBackground: true,
-          playsInSilentModeIOS: true,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: false,
-        });
-      } catch {
-        // Ignorar si el sistema de audio no está listo al inicio
-      }
-    };
-    setupAudio();
+    // Configurar modo de audio de fondo de forma segura
+    try {
+      setAudioModeAsync({
+        playsInSilentMode: true,
+        interruptionMode: 'duckOthers',
+      }).catch(() => {});
+    } catch {
+      // Ignorar si el audio no está listo aún
+    }
 
     return () => {
-      soundRef.current?.unloadAsync().catch(() => {});
+      try {
+        playerRef.current?.remove();
+      } catch {}
     };
   }, []);
-
-  const onPlaybackStatusUpdate = (status: any) => {
-    if (!status.isLoaded) {
-      if (status.error) {
-        setIsPlaying(false);
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    setIsPlaying(status.isPlaying);
-    setPositionMillis(status.positionMillis || 0);
-    setDurationMillis(status.durationMillis || 0);
-    setIsLoading(status.isBuffering);
-
-    if (status.didJustFinish) {
-      setIsPlaying(false);
-      setPositionMillis(0);
-    }
-  };
 
   const playTrack = async (track: Track | DownloadedTrack) => {
     try {
       setIsLoading(true);
       setCurrentTrack(track);
 
-      // Si ya hay una canción cargada, descargarla
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync().catch(() => {});
-        soundRef.current = null;
+      // Si ya hay un reproductor activo, liberarlo
+      if (playerRef.current) {
+        try {
+          playerRef.current.pause();
+          playerRef.current.remove();
+        } catch {}
+        playerRef.current = null;
       }
 
-      // Si la pista tiene localUri (ya fue descargada), la reproduce desde el almacenamiento local
+      // Si la pista tiene localUri (ya descargada), usar archivo local
       let sourceUri = (track as DownloadedTrack).localUri;
       if (!sourceUri) {
         sourceUri = await ApiService.getStreamUrl(track.id);
       }
 
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: sourceUri },
-        { shouldPlay: true, progressUpdateIntervalMillis: 500 },
-        onPlaybackStatusUpdate,
-      );
+      const player = createAudioPlayer({ uri: sourceUri }, { updateInterval: 500 });
+      playerRef.current = player;
 
-      soundRef.current = sound;
+      player.addListener('playbackStatusUpdate', (status) => {
+        setIsPlaying(status.playing);
+        setPositionMillis(Math.floor((status.currentTime || 0) * 1000));
+        setDurationMillis(Math.floor((status.duration || 0) * 1000));
+        setIsLoading(status.isBuffering);
+
+        if (status.playbackState === 'ended') {
+          setIsPlaying(false);
+          setPositionMillis(0);
+        }
+      });
+
+      player.play();
       setIsPlaying(true);
     } catch (err) {
       setIsPlaying(false);
@@ -102,26 +90,34 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const togglePlayPause = async () => {
-    if (!soundRef.current) return;
+    if (!playerRef.current) return;
     if (isPlaying) {
-      await soundRef.current.pauseAsync();
+      playerRef.current.pause();
+      setIsPlaying(false);
     } else {
-      await soundRef.current.playAsync();
+      playerRef.current.play();
+      setIsPlaying(true);
     }
   };
 
   const seekTo = async (millis: number) => {
-    if (!soundRef.current) return;
-    await soundRef.current.setPositionAsync(millis);
+    if (!playerRef.current) return;
+    const seconds = millis / 1000;
+    await playerRef.current.seekTo(seconds);
+    setPositionMillis(millis);
   };
 
   const stop = async () => {
-    if (!soundRef.current) return;
-    await soundRef.current.stopAsync();
-    await soundRef.current.unloadAsync();
-    soundRef.current = null;
+    if (!playerRef.current) return;
+    try {
+      playerRef.current.pause();
+      playerRef.current.remove();
+    } catch {}
+    playerRef.current = null;
     setIsPlaying(false);
     setCurrentTrack(null);
+    setPositionMillis(0);
+    setDurationMillis(0);
   };
 
   return (

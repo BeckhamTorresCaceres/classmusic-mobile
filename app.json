@@ -3,7 +3,6 @@
     "name": "ClassMusic",
     "slug": "classmusic-mobile",
     "version": "1.0.0",
-    "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -38,9 +37,9 @@
       "expo-sharing",
       "expo-updates",
       [
-        "expo-av",
+        "expo-audio",
         {
-          "microphonePermission": false
+          "enableBackgroundPlayback": true
         }
       ],
       [
