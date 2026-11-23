@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   StyleSheet,
   Text,
@@ -7,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Updates from 'expo-updates';
 import { useAuth } from '../context/AuthContext';
 import { ApiService } from '../services/api';
 
@@ -14,6 +16,7 @@ export const SettingsScreen: React.FC = () => {
   const { user, logout } = useAuth();
   const [healthStatus, setHealthStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [ytdlpVer, setYtdlpVer] = useState('');
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   useEffect(() => {
     checkServer();
@@ -27,6 +30,38 @@ export const SettingsScreen: React.FC = () => {
       setYtdlpVer(data.ytdlpVersion || 'OK');
     } catch {
       setHealthStatus('offline');
+    }
+  };
+
+  const handleCheckUpdates = async () => {
+    try {
+      setCheckingUpdate(true);
+      const update = await Updates.checkForUpdateAsync();
+      if (update.isAvailable) {
+        Alert.alert(
+          '¡Actualización encontrada!',
+          'Se descargará la nueva versión y se reiniciará la app.',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Actualizar',
+              onPress: async () => {
+                await Updates.fetchUpdateAsync();
+                await Updates.reloadAsync();
+              },
+            },
+          ],
+        );
+      } else {
+        Alert.alert('App al día', 'Ya tienes la última versión instalada.');
+      }
+    } catch {
+      Alert.alert(
+        'Modo desarrollo / Sin conexión',
+        'Las actualizaciones automáticas funcionan en la versión instalada con conexión a internet.',
+      );
+    } finally {
+      setCheckingUpdate(false);
     }
   };
 
@@ -50,6 +85,28 @@ export const SettingsScreen: React.FC = () => {
             <Text style={styles.userEmail}>{user?.email || 'Sesión activa'}</Text>
           </View>
         </View>
+      </View>
+
+      {/* Actualizaciones Automáticas OTA */}
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Actualizaciones de la App</Text>
+        <Text style={styles.cardSubtitle}>
+          Canal: preview · Versión 1.0.0
+        </Text>
+        <TouchableOpacity
+          style={styles.updateBtn}
+          onPress={handleCheckUpdates}
+          disabled={checkingUpdate}
+        >
+          {checkingUpdate ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Ionicons name="cloud-download-outline" size={18} color="#22c55e" />
+              <Text style={styles.updateBtnText}>Buscar Actualizaciones</Text>
+            </>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Estado del Servidor en Render */}
@@ -104,6 +161,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#27272a',
   },
+  cardSubtitle: {
+    fontSize: 12,
+    color: '#71717a',
+    marginBottom: 10,
+  },
   userRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -135,6 +197,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     marginBottom: 4,
+  },
+  updateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#27272a',
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#3f3f46',
+  },
+  updateBtnText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
   },
   serverUrl: {
     fontSize: 12,
