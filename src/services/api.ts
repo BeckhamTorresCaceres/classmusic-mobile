@@ -143,13 +143,15 @@ export class ApiService {
   }
 
   static async getStreamUrl(trackId: string): Promise<string> {
+    if (!trackId || !trackId.trim()) throw new Error('ID de canción no especificado');
     const { accessToken } = await this.getTokens();
-    return `${this.baseUrl}/stream/${trackId}?token=${accessToken || ''}`;
+    return `${this.baseUrl}/stream/${encodeURIComponent(trackId.trim())}?token=${accessToken || ''}`;
   }
 
   static async getDownloadUrl(trackId: string, format: 'mp3' | 'm4a' = 'mp3'): Promise<string> {
+    if (!trackId || !trackId.trim()) throw new Error('ID de canción no especificado');
     const { accessToken } = await this.getTokens();
-    return `${this.baseUrl}/download/${trackId}?format=${format}&token=${accessToken || ''}`;
+    return `${this.baseUrl}/download/${encodeURIComponent(trackId.trim())}?format=${format}&token=${accessToken || ''}`;
   }
 
   static async checkHealth(): Promise<{ status: string; ytdlpVersion?: string }> {

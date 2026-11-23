@@ -40,11 +40,18 @@ export const TrackCard: React.FC<TrackCardProps> = ({
     }
   }, [track.id, isDownloaded]);
 
-  const handlePlay = () => {
-    if (isCurrent) {
-      player.togglePlayPause();
-    } else {
-      player.playTrack(track);
+  const handlePlay = async () => {
+    try {
+      if (isCurrent) {
+        await player.togglePlayPause();
+      } else {
+        await player.playTrack(track);
+      }
+    } catch (err) {
+      Alert.alert(
+        'Error de Reproducción',
+        err instanceof Error ? err.message : 'No se pudo reproducir la canción',
+      );
     }
   };
 

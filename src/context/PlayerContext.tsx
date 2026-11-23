@@ -76,6 +76,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (status.playbackState === 'ended') {
           setIsPlaying(false);
           setPositionMillis(0);
+        } else if (status.playbackState === 'error') {
+          setIsPlaying(false);
+          setIsLoading(false);
         }
       });
 
