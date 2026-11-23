@@ -64,8 +64,8 @@ npx expo start
 ## 🔐 Inicio de Sesión Rápido
 
 Al abrir la aplicación por primera vez, verás la pantalla de inicio de sesión:
-- **Correo:** `beckhamjosethtorrescaceres@gmail.com`
-- **Contraseña:** `1043444568b*`
+- **Correo:** ``
+- **Contraseña:** 
 
 *(Ambos datos ya vienen preconfigurados para que solo tengas que presionar **"Iniciar Sesión"**)*.
 
