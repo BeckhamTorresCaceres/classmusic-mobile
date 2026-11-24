@@ -1,5 +1,10 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
+import {
+  createAudioPlayer,
+  setAudioModeAsync,
+  requestNotificationPermissionsAsync,
+  AudioPlayer,
+} from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import { ApiService } from '../services/api';
 import type { DownloadedTrack, Track } from '../types';
@@ -28,18 +33,26 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const playerRef = useRef<AudioPlayer | null>(null);
 
   useEffect(() => {
-    // Configurar modo de audio de fondo de forma segura
-    try {
-      setAudioModeAsync({
-        playsInSilentMode: true,
-        interruptionMode: 'duckOthers',
-      }).catch(() => {});
-    } catch {
-      // Ignorar si el audio no está listo aún
-    }
+    // Configurar modo de audio para segundo plano
+    const initAudio = async () => {
+      try {
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          interruptionMode: 'doNotMix',
+          shouldPlayInBackground: true,
+        });
+        // Solicitar permisos de notificación en Android para controles en pantalla de bloqueo
+        await requestNotificationPermissionsAsync().catch(() => {});
+      } catch {
+        // Ignorar si el sistema de audio no está listo aún
+      }
+    };
+
+    initAudio();
 
     return () => {
       try {
+        playerRef.current?.clearLockScreenControls();
         playerRef.current?.remove();
       } catch {}
     };
@@ -50,14 +63,24 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setIsLoading(true);
       setCurrentTrack(track);
 
-      // Si ya hay un reproductor activo, liberarlo
+      // Si ya hay un reproductor activo, liberar controles y remover
       if (playerRef.current) {
         try {
+          playerRef.current.clearLockScreenControls();
           playerRef.current.pause();
           playerRef.current.remove();
         } catch {}
         playerRef.current = null;
       }
+
+      // Asegurar que el modo de audio permita reproducción en segundo plano
+      try {
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          interruptionMode: 'doNotMix',
+          shouldPlayInBackground: true,
+        });
+      } catch {}
 
       // Si la pista tiene localUri (ya descargada), usar archivo local solo si es íntegro
       let sourceUri = (track as DownloadedTrack).localUri;
@@ -75,7 +98,13 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         sourceUri = await ApiService.getStreamUrl(track.id);
       }
 
-      const player = createAudioPlayer({ uri: sourceUri }, { updateInterval: 500 });
+      const player = createAudioPlayer(
+        { uri: sourceUri },
+        {
+          updateInterval: 500,
+          keepAudioSessionActive: true,
+        }
+      );
       playerRef.current = player;
 
       player.addListener('playbackStatusUpdate', (status) => {
@@ -92,6 +121,26 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           setIsLoading(false);
         }
       });
+
+      // Activar controles en la pantalla de bloqueo y barra de notificaciones (foreground service en Android)
+      try {
+        player.setActiveForLockScreen(
+          true,
+          {
+            title: track.title || 'ClassMusic',
+            artist: track.artist || track.channel || 'ClassMusic',
+            artworkUrl: track.thumbnail || undefined,
+          },
+          {
+            showSeekForward: true,
+            showSeekBackward: true,
+            seekForwardIntervalSeconds: 10,
+            seekBackwardIntervalSeconds: 10,
+          }
+        );
+      } catch (err) {
+        console.warn('Error configurando controles de pantalla de bloqueo:', err);
+      }
 
       player.play();
       setIsPlaying(true);
@@ -124,6 +173,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const stop = async () => {
     if (!playerRef.current) return;
     try {
+      playerRef.current.clearLockScreenControls();
       playerRef.current.pause();
       playerRef.current.remove();
     } catch {}
