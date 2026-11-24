@@ -15,6 +15,7 @@ import type { DownloadedTrack, Track } from '../types';
 
 interface TrackCardProps {
   track: Track | DownloadedTrack;
+  queue?: (Track | DownloadedTrack)[];
   isDownloaded?: boolean;
   onDownloaded?: () => void;
   onDeleted?: () => void;
@@ -22,6 +23,7 @@ interface TrackCardProps {
 
 export const TrackCard: React.FC<TrackCardProps> = ({
   track,
+  queue,
   isDownloaded = false,
   onDownloaded,
   onDeleted,
@@ -45,13 +47,22 @@ export const TrackCard: React.FC<TrackCardProps> = ({
       if (isCurrent) {
         await player.togglePlayPause();
       } else {
-        await player.playTrack(track);
+        await player.playTrack(track, queue);
+        player.setIsExpanded(true);
       }
     } catch (err) {
       Alert.alert(
         'Error de Reproducción',
         err instanceof Error ? err.message : 'No se pudo reproducir la canción',
       );
+    }
+  };
+
+  const handleOpenPlayer = async () => {
+    if (isCurrent) {
+      player.setIsExpanded(true);
+    } else {
+      await handlePlay();
     }
   };
 
@@ -143,7 +154,7 @@ export const TrackCard: React.FC<TrackCardProps> = ({
       </TouchableOpacity>
 
       {/* Información de la canción */}
-      <TouchableOpacity style={styles.info} onPress={handlePlay} activeOpacity={0.7}>
+      <TouchableOpacity style={styles.info} onPress={handleOpenPlayer} activeOpacity={0.7}>
         <Text style={[styles.title, isCurrent && styles.titleActive]} numberOfLines={1}>
           {track.title}
         </Text>

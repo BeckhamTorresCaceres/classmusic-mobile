@@ -60,6 +60,7 @@ export const DownloadsScreen: React.FC = () => {
           renderItem={({ item }) => (
             <TrackCard
               track={item}
+              queue={downloadedTracks}
               isDownloaded={true}
               onDeleted={loadDownloads}
             />

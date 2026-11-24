@@ -35,7 +35,11 @@ export const MiniPlayer: React.FC = () => {
         <View style={[styles.progressBarFill, { width: `${Math.min(100, Math.max(0, progress))}%` }]} />
       </View>
 
-      <View style={styles.content}>
+      <TouchableOpacity
+        style={styles.content}
+        onPress={() => player.setIsExpanded(true)}
+        activeOpacity={0.9}
+      >
         {/* Portada */}
         {track.thumbnail ? (
           <Image source={{ uri: track.thumbnail }} style={styles.cover} />
@@ -51,7 +55,7 @@ export const MiniPlayer: React.FC = () => {
             {track.title}
           </Text>
           <Text style={styles.meta} numberOfLines={1}>
-            {track.artist || 'Desconocido'} · {formatTime(player.positionMillis)} / {formatTime(player.durationMillis)}
+            {track.artist || track.channel || 'Desconocido'} · {formatTime(player.positionMillis)} / {formatTime(player.durationMillis)}
           </Text>
         </View>
 
@@ -77,7 +81,7 @@ export const MiniPlayer: React.FC = () => {
             <Ionicons name="close" size={20} color="#71717a" />
           </TouchableOpacity>
         </View>
-      </View>
+      </TouchableOpacity>
     </View>
   );
 };

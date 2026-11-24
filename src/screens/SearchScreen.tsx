@@ -89,7 +89,7 @@ export const SearchScreen: React.FC = () => {
         <FlatList
           data={tracks}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <TrackCard track={item} />}
+          renderItem={({ item }) => <TrackCard track={item} queue={tracks} />}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />

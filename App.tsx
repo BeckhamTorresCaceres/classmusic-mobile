@@ -18,6 +18,7 @@ import { SearchScreen } from './src/screens/SearchScreen';
 import { DownloadsScreen } from './src/screens/DownloadsScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { MiniPlayer } from './src/components/MiniPlayer';
+import { FullPlayerModal } from './src/components/FullPlayerModal';
 
 type TabType = 'search' | 'downloads' | 'settings';
 
@@ -72,6 +73,9 @@ function MainApp() {
 
       {/* Reproductor Flotante */}
       <MiniPlayer />
+
+      {/* Vista Completa de la Canción */}
+      <FullPlayerModal />
 
       {/* Barra de Navegación Inferior (Tabs) */}
       <View style={styles.tabBar}>
